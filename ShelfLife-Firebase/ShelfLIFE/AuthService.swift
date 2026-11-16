@@ -1,10 +1,3 @@
-//
-//  AuthService.swift
-//  ShelfLIFE
-//
-//  Created by Mac-LAB on 9/11/26.
-//
-
 import SwiftUI
 import Combine
 import FirebaseAuth
@@ -12,7 +5,7 @@ import FirebaseAuth
 // MARK: - Auth
 /// Handles signing up, signing in, and signing out.
 /// Views watch `user` to know whether someone is logged in.
-class AuthService: ObservableObject {
+final class AuthService: ObservableObject {
 
     /// The signed-in user, or nil when nobody is signed in.
     @Published var user: User?
@@ -20,14 +13,15 @@ class AuthService: ObservableObject {
     /// Shown in red on the login screen when something goes wrong.
     @Published var errorMessage = ""
 
-    /// True while a sign-in or sign-up request is in flight.
+    /// True while a request is in flight.
     @Published var isWorking = false
 
     private var listener: AuthStateDidChangeListenerHandle?
 
     init() {
-        // Firebase tells us whenever the sign-in state changes — including
-        // at launch, when it restores a session from the last run.
+        // Firebase reports every sign-in change, including at launch when
+        // it restores the previous session. That is what keeps the user
+        // signed in between runs without any extra code.
         listener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             self?.user = user
         }
@@ -39,14 +33,11 @@ class AuthService: ObservableObject {
         }
     }
 
-    /// The signed-in user's ID. Used as their folder name in Firestore.
-    var userID: String? {
-        user?.uid
-    }
+    var userID: String? { user?.uid }
 
-    var email: String {
-        user?.email ?? ""
-    }
+    var email: String { user?.email ?? "" }
+
+    var isSignedIn: Bool { user != nil }
 
     // MARK: Actions
 
@@ -56,11 +47,7 @@ class AuthService: ObservableObject {
         isWorking = true
         Auth.auth().createUser(withEmail: email, password: password) { [weak self] _, error in
             self?.isWorking = false
-            if let error {
-                self?.errorMessage = Self.readable(error)
-            } else {
-                self?.errorMessage = ""
-            }
+            self?.errorMessage = error.map(Self.readable) ?? ""
         }
     }
 
@@ -70,11 +57,7 @@ class AuthService: ObservableObject {
         isWorking = true
         Auth.auth().signIn(withEmail: email, password: password) { [weak self] _, error in
             self?.isWorking = false
-            if let error {
-                self?.errorMessage = Self.readable(error)
-            } else {
-                self?.errorMessage = ""
-            }
+            self?.errorMessage = error.map(Self.readable) ?? ""
         }
     }
 
@@ -119,20 +102,18 @@ class AuthService: ObservableObject {
         return true
     }
 
-    /// Turns Firebase's error codes into something a person can read.
+    /// Turns Firebase error codes into something a person can read.
     private static func readable(_ error: Error) -> String {
-        let code = AuthErrorCode(rawValue: (error as NSError).code)
-
-        switch code {
-        case .emailAlreadyInUse:    return "That email already has an account."
-        case .invalidEmail:         return "That email address isn't valid."
-        case .weakPassword:         return "Pick a stronger password."
-        case .wrongPassword:        return "Wrong password."
-        case .userNotFound:         return "No account found for that email."
-        case .invalidCredential:    return "Email or password is incorrect."
-        case .networkError:         return "No internet connection."
-        case .tooManyRequests:      return "Too many attempts. Wait a moment."
-        default:                    return error.localizedDescription
+        switch AuthErrorCode(rawValue: (error as NSError).code) {
+        case .emailAlreadyInUse: return "That email already has an account."
+        case .invalidEmail:      return "That email address isn't valid."
+        case .weakPassword:      return "Pick a stronger password."
+        case .wrongPassword:     return "Wrong password."
+        case .userNotFound:      return "No account found for that email."
+        case .invalidCredential: return "Email or password is incorrect."
+        case .networkError:      return "No internet connection."
+        case .tooManyRequests:   return "Too many attempts. Wait a moment."
+        default:                 return error.localizedDescription
         }
     }
 }

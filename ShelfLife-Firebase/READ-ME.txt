@@ -1,0 +1,179 @@
+ShelfLife — new design + Firebase
+=================================
+
+NEWEST UPDATE (23 Swift files)
+------------------------------
+New files:
+  History.swift         record of items used, wasted or returned
+  BarcodeScanner.swift  barcode camera + product name lookup
+
+  * History: Mark Used saves "Used", Start Return saves "Returned",
+    and deleting expired food saves "Wasted". Insights shows money
+    saved vs. wasted, a 6-month chart and recent activity. Undo
+    removes the history entry too.
+  * Barcode: Scan -> "Scan Barcode" (real iPhone only). The product
+    name comes from Open Food Facts, a free online food database, so
+    it needs internet and some local products won't be found.
+
+IMPORTANT - Firestore rules:
+  History is saved in a new folder: users/{userID}/history
+  If Insights stays empty and Xcode's console prints
+  "Firestore history error: Missing or insufficient permissions",
+  open Firebase console -> Firestore -> Rules and use:
+
+    rules_version = '2';
+    service cloud.firestore {
+      match /databases/{database}/documents {
+        match /users/{userId}/{document=**} {
+          allow read, write: if request.auth != null
+                             && request.auth.uid == userId;
+        }
+      }
+    }
+
+  Then press Publish.
+
+
+LATEST UPDATE (21 Swift files)
+------------------------------
+New files:
+  Reminders.swift      real iPhone notifications before deadlines
+  ReceiptReader.swift  reads receipt text from a photo (Apple Vision),
+                       plus the camera screen
+
+What's new:
+  * Reminders: real notifications, scheduled on the phone. Settings ->
+    Reminders sets the time and how many days before. Each item has
+    its own "Remind me" switch in the add/edit form.
+  * Undo: after deleting (swipe, trash button, Mark Used, Clear all)
+    an Undo bar shows for 4 seconds.
+  * Extend: the Extend button on food items adds 1 day, 3 days or 1 week.
+  * Add/Edit form: quick date buttons, an emoji picker that follows
+    the category, a price field, and a warranty date for purchases.
+  * Vault: sort menu (soonest, name, price), category filter chips,
+    and an Expired group with "Clear all".
+  * Dashboard: expired items are in their own section and no longer
+    count as "money at risk". Shows how much expired food cost.
+  * Notifications screen: built from your real items; tap a row to
+    open the item.
+  * Recipes: two per food category instead of the same two for all.
+  * Scan: real camera or photo library. The text is read on the
+    phone and fills in name, store, price and category for you to check.
+  * Settings: reminder time, appearance (System/Light/Dark),
+    auto-detect, CSV export, clear expired, privacy policy.
+  * VoiceOver labels on every icon-only button.
+  * Starter items are only added once per account (deleting your last
+    item no longer brings the samples back).
+
+Testing tips:
+  * Notifications: the Simulator shows them too. Allow notifications
+    when asked. To test fast, set Settings -> Reminders -> "On the day"
+    and a time 2 minutes from now, then add an item that expires today.
+  * Scanning: the Simulator has no camera. Drag a receipt photo onto
+    the Simulator window (it goes into Photos), then use
+    "Choose from Photos". On a real iPhone, "Take Photo" appears.
+
+
+TO RUN
+------
+1. Unzip.
+2. Double-click ShelfLIFE.xcodeproj
+3. Wait for Swift Package Manager to finish fetching Firebase
+   (first open only, bottom status bar shows progress).
+4. Pick an iPhone simulator, press Cmd+R.
+
+Your GoogleService-Info.plist is already included and wired into the
+build, so there is nothing to add.
+
+
+WHAT WAS COMBINED
+-----------------
+From ShelfLife.zip  : the 16 redesigned Swift screens
+From ShelfLIFE.zip  : the Xcode project, Firebase SDK, and
+                      GoogleService-Info.plist
+
+Two new files were added to connect them:
+  AuthService.swift      sign up / sign in / sign out
+  FirestoreService.swift reads and writes items in the cloud
+
+18 Swift files total.
+
+
+WHAT CHANGED IN THE NEW CODE
+----------------------------
+Models.swift
+  * ItemCategory and ItemType are now Codable
+  * PantryItem is Codable, and its id is a String instead of a UUID
+    (Firestore uses it as the document ID)
+  * Sample items moved out of the store into PantryItem.samples, and
+    are now written to Firestore once for a new account
+  * ShelfLifeStore now talks to Firestore instead of holding a local
+    array. connect(userID:) starts a live listener, disconnect() stops
+    it. addItem / markUsed / startReturn write to the cloud; the
+    listener pushes the change back and the screens refresh themselves.
+
+ShelfLifeApp.swift
+  * AppDelegate added so FirebaseApp.configure() runs at launch
+  * AuthService created alongside the store
+  * RootView replaces the old isLoggedIn flag: signed out shows
+    LoginView, signing in starts the Firestore listener
+
+LoginView.swift
+  * Same welcome layout, now with real email and password fields,
+    sign up / sign in switching, error messages, and forgot password
+  * The old isLoggedIn binding is gone
+
+ProfileView.swift
+  * Shows the signed-in email and initials instead of hardcoded ones
+  * Stat boxes read live values from the store
+  * Log Out now actually signs out of Firebase
+
+Every other screen was left untouched.
+
+
+BEFORE SIGN-UP WILL WORK
+------------------------
+In the Firebase console:
+  Authentication > Sign-in method > Email/Password > Enable
+
+Without that, sign-up fails with a configuration error.
+
+
+SECURITY RULES
+--------------
+Firestore Database > Rules, then Publish:
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+    }
+  }
+}
+
+This keeps each account to its own items.
+
+
+HOW DATA FLOWS
+--------------
+  tap "Mark Used"
+    -> store.markUsed()
+    -> FirestoreService.delete()      writes to the cloud
+    -> snapshot listener fires        cloud pushes back
+    -> items updated                  @Published announces
+    -> every screen rebuilds
+
+Nothing edits the item list directly, so the screens cannot drift out
+of sync with the server.
+
+
+NOT COMPILED
+------------
+Assembled on Linux, which has no Xcode, so this has not been built.
+Checked by hand: 18 files in the build phase, Firebase packages intact,
+every auth and store member a view calls exists, no duplicate types,
+balanced braces, one @main.
+
+If a build error appears, send the first one from Cmd+5.

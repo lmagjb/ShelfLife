@@ -1,0 +1,53 @@
+ShelfLife — Glass redesign
+==========================
+
+Open ShelfLIFE.xcodeproj, let Swift Package Manager fetch Firebase,
+pick an iPhone simulator, Cmd+R. Firebase setup is unchanged.
+
+
+THE DESIGN
+----------
+Glass only looks like glass when there is colour behind it, so the
+whole app now sits on an "aurora" backdrop — soft mint, teal, amber and
+violet light fields. Every panel on top is frosted (.ultraThinMaterial)
+with a bright top edge and a thin light border.
+
+  * Floating glass tab bar with a raised scan button
+  * Frosted cards, rows, chips, search bar and segmented control
+  * Inset "wells" for text fields
+  * Animated aurora on the sign-in screen only (static elsewhere,
+    to save battery)
+  * Works in light and dark mode — text uses system colours, so it
+    stays readable on both
+
+
+NEW FILE
+--------
+GlassKit.swift   palette, aurora backdrop, the .glass() / .glassCard()
+                 modifiers, button styles, GlassSection, GlassDivider.
+                 Change the look of the whole app from here.
+
+AppTheme moved from Models.swift into GlassKit.swift.
+Every other screen was restyled; logic and Firebase code untouched.
+
+
+BUG FIXED
+---------
+Dashboard and Vault used navigationDestination(for: UUID.self), but
+PantryItem.id became a String for Firestore. Tapping an item silently
+did nothing. Both now use String.self.
+
+
+SMALL HONESTY FIXES
+-------------------
+Insights used a hardcoded spending table and "₱4,120 saved" text.
+Spending by category is now worked out from your real items, and the
+mark-used screen no longer claims a made-up total.
+
+
+NOT COMPILED
+------------
+Built on Linux (no Xcode). Checked: 19 files in the build phase,
+Firebase packages intact, balanced braces, no duplicate types, every
+AppTheme colour used is defined. Send the first error from Cmd+5 if
+something breaks.

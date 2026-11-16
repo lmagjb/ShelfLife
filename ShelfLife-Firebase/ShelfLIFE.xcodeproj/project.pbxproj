@@ -7,40 +7,62 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		079117E3B1E85D7DC5957C31 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F01938BC4E7762B0A2012BF7 /* Models.swift */; };
-		141CD29B7BFAAFE5A1FBE6DB /* DetailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E661C1275B1C6E921543F05 /* DetailViews.swift */; };
-		4B8C8A01E7EDF7442FFDC46F /* SheetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16C89633579162E290DD3AB6 /* SheetViews.swift */; };
 		5D94B037F343DDC7760734D4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7E65800BA79435975697201F /* Assets.xcassets */; };
 		838BDB4C3053A16100B1CDEF /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 838BDB4B3053A16100B1CDEF /* GoogleService-Info.plist */; };
-		838BDB4E3053A33300B1CDEF /* DataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 838BDB4D3053A32B00B1CDEF /* DataService.swift */; };
 		83CF3AE930539687006951A5 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 83CF3AE830539687006951A5 /* FirebaseAuth */; };
 		83CF3AEB30539687006951A5 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 83CF3AEA30539687006951A5 /* FirebaseFirestore */; };
-		83CF3AED30539858006951A5 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83CF3AEC3053984C006951A5 /* AuthService.swift */; };
-		83CF3AEF30539965006951A5 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83CF3AEE3053995C006951A5 /* LoginView.swift */; };
-		84B8946250C6E40717800EAE /* VaultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EA9B828F8D7200E05EBDBEB /* VaultView.swift */; };
-		8A4EE286A0F1C7EF6137437F /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D91EF2C07F31E026A1CB68A /* InsightsView.swift */; };
-		91EBF26D228D2B1012CFD1C7 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0353B1A471984641F3C5F331 /* HomeView.swift */; };
-		A568102BBBC5B8EF351F06F9 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6504AA8B55A93618ED3B4C14 /* Theme.swift */; };
-		EFF5678D37EA9FC40C3BDE89 /* ShelfLIFEApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABC541AEBA52FC4D28F126E /* ShelfLIFEApp.swift */; };
-		F7D57A441996DE3E0AC1C716 /* AppData.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC1EB816113AEAC8B734D4E5 /* AppData.swift */; };
+		19594AB93CDE20BE1B2904FC /* AddEditItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C71C76C2871A655A1DD6D5C /* AddEditItemView.swift */; };
+		DCC73A1F1CE181C5D3372957 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0674D2B6F9D6D424838EA043 /* AuthService.swift */; };
+		B644613C79ED2C6F78E8CB0F /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC286A2A8BE47321C602E5F7 /* Components.swift */; };
+		8A01E22F5A842A525A824462 /* ConfirmationViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD632F11681BF6F047D8A5B /* ConfirmationViews.swift */; };
+		9B1540195F5579C142B4622C /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 277CC5A37FBA0CEF9ECBBCE7 /* DashboardView.swift */; };
+		0B04B3A259BACBEF0B501A6D /* FirestoreService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9388F179AF37049BAE1DED92 /* FirestoreService.swift */; };
+		D1A7594C0E4489E0A61770B9 /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30773806A500CF6AEF6D3B91 /* InsightsView.swift */; };
+		435664A194963537396CC1F7 /* ItemDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 889767533B642E9E2C4A0301 /* ItemDetailView.swift */; };
+		2B4F2B50294DC5E551360B93 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F66A484B04F0D240D8C28A0 /* LoginView.swift */; };
+		5AAEFA82D50F71BF7DF253C8 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 242311824310AF52A4DF8787 /* MainTabView.swift */; };
+		EBDB543239B734E9BCEA6562 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 562E28F3813BCBB4232D4EA4 /* Models.swift */; };
+		D409C79E6D2A0CDFF6B3007C /* NotificationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 683EED0599887E0D9FE70997 /* NotificationsView.swift */; };
+		50BB389AC84CEB190546CE2D /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3637A08928C2F3EFBAE0723 /* ProfileView.swift */; };
+		91699EB24E1DE81FCEB01B8A /* RecipeDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9B1BFAA34B3C38825645B0 /* RecipeDetailView.swift */; };
+		1FA79EBFF2531E7905C1239E /* ScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0526FB69AB919FE56B268A22 /* ScanView.swift */; };
+		B75F15069B5B120E0E333584 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 806B3D6FED203CAAAEFE463B /* SettingsView.swift */; };
+		2685E7DD2413B426713A077A /* ShelfLifeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 952B03A27729AF01E8678BA0 /* ShelfLifeApp.swift */; };
+		7CBBF2219C0BD4B02B582B0B /* VaultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DFE6F0D0466C6867252DA48 /* VaultView.swift */; };
+		5A2B04DF1891508D32F0FC20 /* GlassKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651E9D35131DAD4A40987421 /* GlassKit.swift */; };
+		78490493031E951C5EB43FB8 /* BarcodeScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CCA344F0A361389BC4C29D2 /* BarcodeScanner.swift */; };
+		9760047FBE0FD52DC84D622C /* History.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC16B551C235B5B4E3F5C76C /* History.swift */; };
+		0CA12EDA2EBE8E1D00A418CB /* ReceiptReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 486FCD93D8C6556C670DF24E /* ReceiptReader.swift */; };
+		250D1D5C1443880BAB60B070 /* Reminders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E4221F8332C1CF27BA518FC /* Reminders.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0353B1A471984641F3C5F331 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
-		16C89633579162E290DD3AB6 /* SheetViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetViews.swift; sourceTree = "<group>"; };
-		1E661C1275B1C6E921543F05 /* DetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailViews.swift; sourceTree = "<group>"; };
-		2D91EF2C07F31E026A1CB68A /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
-		6504AA8B55A93618ED3B4C14 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
-		6EA9B828F8D7200E05EBDBEB /* VaultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultView.swift; sourceTree = "<group>"; };
 		7C695281B0B4AF17886CD5E8 /* ShelfLIFE.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ShelfLIFE.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7E65800BA79435975697201F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		838BDB4B3053A16100B1CDEF /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
-		838BDB4D3053A32B00B1CDEF /* DataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataService.swift; sourceTree = "<group>"; };
-		83CF3AEC3053984C006951A5 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
-		83CF3AEE3053995C006951A5 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
-		EABC541AEBA52FC4D28F126E /* ShelfLIFEApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfLIFEApp.swift; sourceTree = "<group>"; };
-		F01938BC4E7762B0A2012BF7 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
-		FC1EB816113AEAC8B734D4E5 /* AppData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppData.swift; sourceTree = "<group>"; };
+		1C71C76C2871A655A1DD6D5C /* AddEditItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEditItemView.swift; sourceTree = "<group>"; };
+		0674D2B6F9D6D424838EA043 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		CC286A2A8BE47321C602E5F7 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		AAD632F11681BF6F047D8A5B /* ConfirmationViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmationViews.swift; sourceTree = "<group>"; };
+		277CC5A37FBA0CEF9ECBBCE7 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		9388F179AF37049BAE1DED92 /* FirestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreService.swift; sourceTree = "<group>"; };
+		30773806A500CF6AEF6D3B91 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
+		889767533B642E9E2C4A0301 /* ItemDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemDetailView.swift; sourceTree = "<group>"; };
+		0F66A484B04F0D240D8C28A0 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		242311824310AF52A4DF8787 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		562E28F3813BCBB4232D4EA4 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		683EED0599887E0D9FE70997 /* NotificationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsView.swift; sourceTree = "<group>"; };
+		B3637A08928C2F3EFBAE0723 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		0C9B1BFAA34B3C38825645B0 /* RecipeDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeDetailView.swift; sourceTree = "<group>"; };
+		0526FB69AB919FE56B268A22 /* ScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanView.swift; sourceTree = "<group>"; };
+		806B3D6FED203CAAAEFE463B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		952B03A27729AF01E8678BA0 /* ShelfLifeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfLifeApp.swift; sourceTree = "<group>"; };
+		0DFE6F0D0466C6867252DA48 /* VaultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultView.swift; sourceTree = "<group>"; };
+		651E9D35131DAD4A40987421 /* GlassKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassKit.swift; sourceTree = "<group>"; };
+		8CCA344F0A361389BC4C29D2 /* BarcodeScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeScanner.swift; sourceTree = "<group>"; };
+		EC16B551C235B5B4E3F5C76C /* History.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = History.swift; sourceTree = "<group>"; };
+		486FCD93D8C6556C670DF24E /* ReceiptReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptReader.swift; sourceTree = "<group>"; };
+		8E4221F8332C1CF27BA518FC /* Reminders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reminders.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -59,20 +81,31 @@
 		32966147C0B300D4C0CCCA29 /* ShelfLIFE */ = {
 			isa = PBXGroup;
 			children = (
-				838BDB4D3053A32B00B1CDEF /* DataService.swift */,
 				838BDB4B3053A16100B1CDEF /* GoogleService-Info.plist */,
-				83CF3AEE3053995C006951A5 /* LoginView.swift */,
-				83CF3AEC3053984C006951A5 /* AuthService.swift */,
-				FC1EB816113AEAC8B734D4E5 /* AppData.swift */,
-				1E661C1275B1C6E921543F05 /* DetailViews.swift */,
-				0353B1A471984641F3C5F331 /* HomeView.swift */,
-				2D91EF2C07F31E026A1CB68A /* InsightsView.swift */,
-				F01938BC4E7762B0A2012BF7 /* Models.swift */,
-				16C89633579162E290DD3AB6 /* SheetViews.swift */,
-				EABC541AEBA52FC4D28F126E /* ShelfLIFEApp.swift */,
-				6504AA8B55A93618ED3B4C14 /* Theme.swift */,
-				6EA9B828F8D7200E05EBDBEB /* VaultView.swift */,
 				7E65800BA79435975697201F /* Assets.xcassets */,
+				1C71C76C2871A655A1DD6D5C /* AddEditItemView.swift */,
+				0674D2B6F9D6D424838EA043 /* AuthService.swift */,
+				CC286A2A8BE47321C602E5F7 /* Components.swift */,
+				651E9D35131DAD4A40987421 /* GlassKit.swift */,
+				8CCA344F0A361389BC4C29D2 /* BarcodeScanner.swift */,
+				EC16B551C235B5B4E3F5C76C /* History.swift */,
+				486FCD93D8C6556C670DF24E /* ReceiptReader.swift */,
+				8E4221F8332C1CF27BA518FC /* Reminders.swift */,
+				AAD632F11681BF6F047D8A5B /* ConfirmationViews.swift */,
+				277CC5A37FBA0CEF9ECBBCE7 /* DashboardView.swift */,
+				9388F179AF37049BAE1DED92 /* FirestoreService.swift */,
+				30773806A500CF6AEF6D3B91 /* InsightsView.swift */,
+				889767533B642E9E2C4A0301 /* ItemDetailView.swift */,
+				0F66A484B04F0D240D8C28A0 /* LoginView.swift */,
+				242311824310AF52A4DF8787 /* MainTabView.swift */,
+				562E28F3813BCBB4232D4EA4 /* Models.swift */,
+				683EED0599887E0D9FE70997 /* NotificationsView.swift */,
+				B3637A08928C2F3EFBAE0723 /* ProfileView.swift */,
+				0C9B1BFAA34B3C38825645B0 /* RecipeDetailView.swift */,
+				0526FB69AB919FE56B268A22 /* ScanView.swift */,
+				806B3D6FED203CAAAEFE463B /* SettingsView.swift */,
+				952B03A27729AF01E8678BA0 /* ShelfLifeApp.swift */,
+				0DFE6F0D0466C6867252DA48 /* VaultView.swift */,
 			);
 			path = ShelfLIFE;
 			sourceTree = "<group>";
@@ -166,18 +199,29 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F7D57A441996DE3E0AC1C716 /* AppData.swift in Sources */,
-				141CD29B7BFAAFE5A1FBE6DB /* DetailViews.swift in Sources */,
-				91EBF26D228D2B1012CFD1C7 /* HomeView.swift in Sources */,
-				838BDB4E3053A33300B1CDEF /* DataService.swift in Sources */,
-				8A4EE286A0F1C7EF6137437F /* InsightsView.swift in Sources */,
-				079117E3B1E85D7DC5957C31 /* Models.swift in Sources */,
-				4B8C8A01E7EDF7442FFDC46F /* SheetViews.swift in Sources */,
-				EFF5678D37EA9FC40C3BDE89 /* ShelfLIFEApp.swift in Sources */,
-				83CF3AED30539858006951A5 /* AuthService.swift in Sources */,
-				83CF3AEF30539965006951A5 /* LoginView.swift in Sources */,
-				A568102BBBC5B8EF351F06F9 /* Theme.swift in Sources */,
-				84B8946250C6E40717800EAE /* VaultView.swift in Sources */,
+				19594AB93CDE20BE1B2904FC /* AddEditItemView.swift in Sources */,
+				DCC73A1F1CE181C5D3372957 /* AuthService.swift in Sources */,
+				B644613C79ED2C6F78E8CB0F /* Components.swift in Sources */,
+				5A2B04DF1891508D32F0FC20 /* GlassKit.swift in Sources */,
+				78490493031E951C5EB43FB8 /* BarcodeScanner.swift in Sources */,
+				9760047FBE0FD52DC84D622C /* History.swift in Sources */,
+				0CA12EDA2EBE8E1D00A418CB /* ReceiptReader.swift in Sources */,
+				250D1D5C1443880BAB60B070 /* Reminders.swift in Sources */,
+				8A01E22F5A842A525A824462 /* ConfirmationViews.swift in Sources */,
+				9B1540195F5579C142B4622C /* DashboardView.swift in Sources */,
+				0B04B3A259BACBEF0B501A6D /* FirestoreService.swift in Sources */,
+				D1A7594C0E4489E0A61770B9 /* InsightsView.swift in Sources */,
+				435664A194963537396CC1F7 /* ItemDetailView.swift in Sources */,
+				2B4F2B50294DC5E551360B93 /* LoginView.swift in Sources */,
+				5AAEFA82D50F71BF7DF253C8 /* MainTabView.swift in Sources */,
+				EBDB543239B734E9BCEA6562 /* Models.swift in Sources */,
+				D409C79E6D2A0CDFF6B3007C /* NotificationsView.swift in Sources */,
+				50BB389AC84CEB190546CE2D /* ProfileView.swift in Sources */,
+				91699EB24E1DE81FCEB01B8A /* RecipeDetailView.swift in Sources */,
+				1FA79EBFF2531E7905C1239E /* ScanView.swift in Sources */,
+				B75F15069B5B120E0E333584 /* SettingsView.swift in Sources */,
+				2685E7DD2413B426713A077A /* ShelfLifeApp.swift in Sources */,
+				7CBBF2219C0BD4B02B582B0B /* VaultView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
