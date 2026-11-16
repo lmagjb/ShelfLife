@@ -4,6 +4,32 @@ import FirebaseFirestore
 
 // The palette and every glass component live in GlassKit.swift.
 
+// MARK: - Money
+/// Formats prices in the currency picked in Profile → Change currency.
+/// Shows centavos only when there are some: ₱3,499 and ₱89.50.
+enum Money {
+    static let currencyKey = "currencyCode"
+    static let defaultCode = "PHP"
+    static let choices = ["PHP", "USD", "EUR", "GBP", "JPY", "SGD", "AUD", "CAD"]
+
+    static var code: String {
+        UserDefaults.standard.string(forKey: currencyKey) ?? defaultCode
+    }
+
+    static func format(_ amount: Double) -> String {
+        let digits = amount == amount.rounded() ? 0 : 2
+        return amount.formatted(.currency(code: code).precision(.fractionLength(digits)))
+    }
+
+    /// "₱", "$", "€"… for the price fields.
+    static var symbol: String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = code
+        return formatter.currencySymbol ?? code
+    }
+}
+
 // MARK: - Enums
 
 enum ItemCategory: String, Codable, CaseIterable, Identifiable {
@@ -41,6 +67,19 @@ enum ItemCategory: String, Codable, CaseIterable, Identifiable {
     }
 
     var emoji: String { emojiChoices[0] }
+
+    /// A sensible default deadline for a new item in this category:
+    /// how long the food usually keeps, or a 30-day return window.
+    var typicalDays: Int {
+        switch self {
+        case .meat:    return 3
+        case .produce: return 5
+        case .bakery:  return 5
+        case .dairy:   return 7
+        case .pantry:  return 90
+        case .electronics, .home, .apparel: return 30
+        }
+    }
 
     static func categories(for type: ItemType) -> [ItemCategory] {
         allCases.filter { $0.isFood == (type == .food) }
@@ -92,11 +131,22 @@ struct PantryItem: Identifiable, Codable {
     var warrantyDate: Date? = nil
     /// Whether to send a reminder before the deadline.
     var notify: Bool = true
+    /// How many are left (12 eggs). nil means it isn't counted.
+    var quantity: Int? = nil
+    /// Purchases: when "Start Return" was tapped. The item stays on the
+    /// list, with its reminder, until it is marked as returned.
+    var returnStartedDate: Date? = nil
 
     enum CodingKeys: String, CodingKey {
         case id, name, emoji, category, type, source,
-             purchasedDate, expiryDate, notes, amount, warrantyDate, notify
+             purchasedDate, expiryDate, notes, amount, warrantyDate, notify,
+             quantity, returnStartedDate
     }
+
+    var isReturning: Bool { type == .purchase && returnStartedDate != nil }
+
+    /// Units left, counting an uncounted item as 1.
+    var count: Int { max(quantity ?? 1, 1) }
 
     // MARK: Dates
 
@@ -133,6 +183,9 @@ struct PantryItem: Identifiable, Codable {
 
         if isUnderWarrantyOnly {
             return left == 0 ? "Warranty ends today" : "Warranty · \(left)d left"
+        }
+        if isReturning && left >= 0 {
+            return left == 0 ? "Drop off today" : "Drop off · \(left)d left"
         }
         if left < 0 {
             if type == .purchase { return "Return closed" }
@@ -193,6 +246,8 @@ extension PantryItem {
 
         warrantyDate = try c.decodeIfPresent(Date.self, forKey: .warrantyDate)
         notify       = try c.decodeIfPresent(Bool.self, forKey: .notify) ?? true
+        quantity     = try c.decodeIfPresent(Int.self, forKey: .quantity)
+        returnStartedDate = try c.decodeIfPresent(Date.self, forKey: .returnStartedDate)
     }
 }
 
@@ -263,11 +318,21 @@ final class ShelfLifeStore: ObservableObject {
     @Published var recentlyDeleted: [PantryItem] = []
     /// What happened to past items (used, wasted, returned). Newest first.
     @Published var history: [HistoryEntry] = []
+    /// The last save or delete that failed. Shown as a banner.
+    @Published var errorMessage: String? = nil
 
     private let service = FirestoreService()
     private var listener: ListenerRegistration?
     private var historyListener: ListenerRegistration?
     private var userID: String?
+    /// The starter-items check runs once per sign-in.
+    private var didCheckSeed = false
+
+    init() {
+        service.onError = { [weak self] message in
+            self?.errorMessage = message
+        }
+    }
 
     // MARK: Connecting
 
@@ -289,6 +354,7 @@ final class ShelfLifeStore: ObservableObject {
             self.items = items
             self.isLoading = false
             ReminderManager.shared.reschedule(for: items)
+            self.applyNotificationActions()
 
             // The first snapshot can come from the phone's cache before the
             // server answers. Only decide about starter data once the
@@ -307,19 +373,48 @@ final class ShelfLifeStore: ObservableObject {
         historyListener = nil
         history = []
         userID = nil
+        didCheckSeed = false
         items = []
         recentlyDeleted = []
         ReminderManager.shared.removeAll()
     }
 
-    /// Starter items go in once per account. Without the saved flag,
-    /// deleting your last item would bring the samples back.
+    /// Starter items go in once per account. The flag is saved on the
+    /// account in Firestore, so emptying your list and then reinstalling
+    /// or using a new phone doesn't bring the samples back.
     private func seedIfNeeded(userID: String, isEmpty: Bool) {
-        let key = "seeded-\(userID)"
-        guard !UserDefaults.standard.bool(forKey: key) else { return }
-        UserDefaults.standard.set(true, forKey: key)
-        if isEmpty {
-            service.seedSampleData(userID: userID)
+        guard !didCheckSeed else { return }
+        didCheckSeed = true
+
+        // Older versions kept the flag on the phone. Carry it over.
+        let legacyKey = "seeded-\(userID)"
+        if UserDefaults.standard.bool(forKey: legacyKey) {
+            service.markSeeded(userID: userID)
+            return
+        }
+
+        service.isSeeded(userID: userID) { [weak self] seeded in
+            guard let self, self.userID == userID else { return }
+            // nil: couldn't reach the server. Try again next sign-in.
+            guard let seeded else { self.didCheckSeed = false; return }
+            if seeded { return }
+            if isEmpty && self.items.isEmpty {
+                self.service.seedSampleData(userID: userID)
+            }
+            self.service.markSeeded(userID: userID)
+        }
+    }
+
+    /// Deletes everything this account stored. Listening stops first so
+    /// the empty list doesn't trigger the starter items again.
+    func deleteAllData(userID: String, completion: @escaping (Error?) -> Void) {
+        disconnect()
+        service.deleteAllData(userID: userID) { [weak self] error in
+            if error != nil {
+                // Still signed in, so start showing the items again.
+                self?.connect(userID: userID)
+            }
+            completion(error)
         }
     }
 
@@ -349,6 +444,11 @@ final class ShelfLifeStore: ObservableObject {
     /// already gone, not at risk.
     var atRiskItems: [PantryItem] {
         items.filter { (0...7).contains($0.activeDaysLeft) }
+    }
+
+    /// Due today or already past. Shown as the app icon badge.
+    var dueOrOverdueCount: Int {
+        items.filter { $0.activeDaysLeft <= 0 }.count
     }
 
     var totalAtRisk: Double {
@@ -384,6 +484,9 @@ final class ShelfLifeStore: ObservableObject {
     private static func alertTitle(for item: PantryItem) -> String {
         let left = item.activeDaysLeft
         if item.isUnderWarrantyOnly { return "\(item.name) warranty ends \(dueText(left))" }
+        if item.isReturning && left >= 0 {
+            return "Drop off \(item.name) \(dueText(left))"
+        }
         if item.type == .purchase {
             return left < 0 ? "Return window closed for \(item.name)"
                             : "\(item.name) return window closes \(dueText(left))"
@@ -393,6 +496,9 @@ final class ShelfLifeStore: ObservableObject {
 
     private static func alertMessage(for item: PantryItem) -> String {
         if item.isUnderWarrantyOnly { return "File any repair or replacement claim before it ends." }
+        if item.isReturning && !item.isExpired {
+            return "Return started. Mark it returned once it's dropped off."
+        }
         if item.type == .purchase {
             return item.isExpired ? "You can delete it if you're keeping it."
                                   : "Start the return if you're not keeping it."
@@ -460,9 +566,62 @@ final class ShelfLifeStore: ObservableObject {
         }
     }
 
-    // Using an item or returning it also takes it off the list.
-    func markUsed(_ item: PantryItem)    { deleteItems([item], outcome: .used) }
-    func startReturn(_ item: PantryItem) { deleteItems([item], outcome: .returned) }
+    /// Using all of an item takes it off the list.
+    func markUsed(_ item: PantryItem) { deleteItems([item], outcome: .used) }
+
+    /// Uses one of several (1 of 12 eggs). Logs that one as used and
+    /// keeps the rest, with the price split per unit.
+    func useOne(_ item: PantryItem) {
+        guard item.count > 1, let userID else {
+            markUsed(item)
+            return
+        }
+        let perUnit = item.amount.map { $0 / Double(item.count) }
+
+        var used = HistoryEntry(item: item, outcome: .used)
+        used.id = "\(item.id)-\(UUID().uuidString)"
+        used.amount = perUnit
+        service.saveHistory(used, userID: userID)
+
+        var rest = item
+        rest.quantity = item.count - 1
+        rest.amount = perUnit.map { $0 * Double(item.count - 1) }
+        updateItem(rest)
+    }
+
+    /// Starting a return keeps the item, and its reminder, on the list
+    /// until it is marked as returned.
+    func startReturn(_ item: PantryItem) {
+        var updated = item
+        updated.returnStartedDate = Date()
+        updateItem(updated)
+    }
+
+    func cancelReturn(_ item: PantryItem) {
+        var updated = item
+        updated.returnStartedDate = nil
+        updateItem(updated)
+    }
+
+    /// Dropped off: takes it off the list and logs it as returned.
+    func completeReturn(_ item: PantryItem) { deleteItems([item], outcome: .returned) }
+
+    // MARK: Notification buttons
+
+    /// Runs "Mark used" / "+3 days" taps from reminders once the item has
+    /// loaded. Taps can arrive before sign-in finishes restoring.
+    private func applyNotificationActions() {
+        for action in ReminderManager.shared.pendingActions {
+            guard let item = items.first(where: { $0.id == action.itemID }) else { continue }
+            switch action.kind {
+            case .markUsed:
+                if item.count > 1 { useOne(item) } else { markUsed(item) }
+            case .extend3:
+                extend(item, byDays: 3)
+            }
+            ReminderManager.shared.pendingActions.removeAll { $0.itemID == action.itemID }
+        }
+    }
 
     // MARK: History numbers
 
@@ -528,7 +687,7 @@ final class ShelfLifeStore: ObservableObject {
             "\"" + text.replacingOccurrences(of: "\"", with: "\"\"") + "\""
         }
 
-        var lines = ["Name,Type,Category,Store,Purchased,Expiry or return date,Warranty until,Price (PHP),Notes"]
+        var lines = ["Name,Type,Category,Store,Purchased,Expiry or return date,Warranty until,Quantity,Price (\(Money.code)),Notes"]
         for item in items.sorted(by: { $0.expiryDate < $1.expiryDate }) {
             lines.append([
                 field(item.name),
@@ -538,6 +697,7 @@ final class ShelfLifeStore: ObservableObject {
                 formatter.string(from: item.purchasedDate),
                 formatter.string(from: item.expiryDate),
                 item.warrantyDate.map { formatter.string(from: $0) } ?? "",
+                item.quantity.map(String.init) ?? "",
                 item.amount.map { String(format: "%.2f", $0) } ?? "",
                 field(item.notes)
             ].joined(separator: ","))
@@ -560,8 +720,19 @@ final class ShelfLifeStore: ObservableObject {
     func recipes(for item: PantryItem) -> [RescueRecipe] {
         let name = item.name.lowercased()
 
+        // The templates pour the item in by the cup, so they only suit
+        // some items: milk pancakes need milk, a smoothie needs fruit.
+        // Anything else gets the general recipes at the bottom.
+        func mentions(_ words: [String]) -> Bool {
+            words.contains { name.contains($0) }
+        }
+        let isMilky = mentions(["milk", "gatas", "cream", "yogurt", "yoghurt"])
+        let isFruit = mentions(["apple", "banana", "saging", "mango", "mangga", "orange", "grape",
+                                "berry", "berries", "pineapple", "papaya", "melon", "fruit", "pear",
+                                "kiwi", "peach", "avocado", "calamansi"])
+
         switch item.category {
-        case .dairy:
+        case .dairy where isMilky:
             return [
                 RescueRecipe(name: "Milk Pancakes", emoji: "🥞", prepMinutes: 15, servings: 2, calories: 310,
                              ingredients: ["1 cup \(name)", "2 eggs", "1½ cups flour",
@@ -576,6 +747,19 @@ final class ShelfLifeStore: ObservableObject {
                                      "Strain the mix over the caramel", "Cover with foil and steam for 30 minutes",
                                      "Chill, then flip onto a plate"])
             ]
+        case .produce where isFruit:
+            return [
+                RescueRecipe(name: "Fruit Smoothie", emoji: "🥤", prepMinutes: 5, servings: 2, calories: 180,
+                             ingredients: ["1 cup \(name), chopped", "1 banana", "1 cup milk or yogurt",
+                                           "1 tbsp honey", "a handful of ice"],
+                             steps: ["Put everything in the blender", "Blend until smooth", "Taste and add honey if needed",
+                                     "Drink right away"]),
+                RescueRecipe(name: "Fruit Salad", emoji: "🍧", prepMinutes: 10, servings: 4, calories: 220,
+                             ingredients: ["2 cups \(name), diced", "1 cup other fruit you have", "½ cup all-purpose cream",
+                                           "¼ cup condensed milk"],
+                             steps: ["Dice the fruit into bite-size pieces", "Fold in the cream and condensed milk",
+                                     "Chill for at least 30 minutes", "Serve cold"])
+            ]
         case .produce:
             return [
                 RescueRecipe(name: "Ginisang Gulay", emoji: "🥘", prepMinutes: 15, servings: 3, calories: 150,
@@ -583,11 +767,11 @@ final class ShelfLifeStore: ObservableObject {
                                            "1 tbsp oyster sauce", "1 tbsp oil", "salt and pepper"],
                              steps: ["Sauté the garlic and onion in oil", "Add the \(name) and stir-fry for 3–4 minutes",
                                      "Season with oyster sauce, salt and pepper", "Serve hot with rice"]),
-                RescueRecipe(name: "Fruit & Veggie Smoothie", emoji: "🥤", prepMinutes: 5, servings: 2, calories: 180,
-                             ingredients: ["1 cup \(name)", "1 banana", "1 cup milk or yogurt",
-                                           "1 tbsp honey", "a handful of ice"],
-                             steps: ["Put everything in the blender", "Blend until smooth", "Taste and add honey if needed",
-                                     "Drink right away"])
+                RescueRecipe(name: "Sinabawang Gulay", emoji: "🍲", prepMinutes: 25, servings: 4, calories: 140,
+                             ingredients: ["2 cups \(name), chopped", "1 onion", "2 cloves garlic", "1 thumb ginger",
+                                           "4 cups water or broth", "fish sauce to taste"],
+                             steps: ["Sauté the garlic, onion and ginger", "Pour in the water and bring to a boil",
+                                     "Add the \(name) and simmer until tender", "Season with fish sauce and serve hot"])
             ]
         case .meat:
             return [
