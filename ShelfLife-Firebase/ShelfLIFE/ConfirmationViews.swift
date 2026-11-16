@@ -101,7 +101,7 @@ struct ReturnConfirmationView: View {
             VStack(spacing: 8) {
                 Text("Return started")
                     .font(.title3).fontWeight(.semibold)
-                Text("We'll remind you to drop off the \(item.name) by \(item.expiryDate.formatted(date: .abbreviated, time: .omitted)).")
+                Text("We'll remind you to drop off the \(item.name) by \(item.expiryDate.formatted(date: .abbreviated, time: .omitted)). Tap Mark Returned on the item once it's done.")
                     .font(.subheadline).foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }

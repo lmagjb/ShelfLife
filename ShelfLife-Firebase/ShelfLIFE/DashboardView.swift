@@ -92,7 +92,7 @@ struct DashboardView: View {
             }
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("₱\(Int(store.totalAtRisk))")
+                Text(Money.format(store.totalAtRisk))
                     .font(.system(size: 40, weight: .bold, design: .rounded))
                     .foregroundStyle(
                         LinearGradient(colors: [.primary, .primary.opacity(0.65)],
@@ -197,7 +197,7 @@ struct DashboardView: View {
                 Text("Expired").font(.headline)
                 Spacer()
                 if store.totalWasted > 0 {
-                    Text("₱\(Int(store.totalWasted)) wasted")
+                    Text("\(Money.format(store.totalWasted)) expired, not cleared")
                         .font(.caption).fontWeight(.semibold)
                         .foregroundStyle(AppTheme.danger)
                 }

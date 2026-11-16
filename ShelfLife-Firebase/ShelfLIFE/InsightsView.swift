@@ -42,7 +42,7 @@ struct InsightsView: View {
 
     private var headlineTiles: some View {
         HStack(spacing: 12) {
-            statBox(value: "₱\(Int(store.totalAtRisk))",
+            statBox(value: Money.format(store.totalAtRisk),
                     label: "At risk this week",
                     icon: "exclamationmark.triangle.fill",
                     tint: AppTheme.warning)
@@ -109,7 +109,7 @@ struct InsightsView: View {
                     .font(.subheadline)
                     .foregroundStyle(.primary)
                 Spacer()
-                Text("₱\(Int(total))")
+                Text(Money.format(total))
                     .font(.subheadline).fontWeight(.semibold)
                     .foregroundStyle(.secondary)
             }
@@ -138,15 +138,15 @@ struct InsightsView: View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 3) {
                 Text("Used vs. Wasted").font(.headline)
-                Text("Food you finished in time against food that expired")
+                Text("Food you finished in time against expired food you cleared")
                     .font(.caption).foregroundStyle(.secondary)
             }
 
             if let rate = store.usedRate {
                 HStack(spacing: 12) {
-                    outcomeBox(value: "₱\(Int(store.totalSaved))",
+                    outcomeBox(value: Money.format(store.totalSaved),
                                label: "\(store.usedCount) used in time", tint: AppTheme.sage)
-                    outcomeBox(value: "₱\(Int(store.totalWastedHistory))",
+                    outcomeBox(value: Money.format(store.totalWastedHistory),
                                label: "\(store.wastedCount) wasted", tint: AppTheme.danger)
                 }
 
@@ -168,7 +168,7 @@ struct InsightsView: View {
                 .accessibilityElement(children: .combine)
 
                 if store.totalReturned > 0 {
-                    Text("Plus ₱\(Int(store.totalReturned)) back from purchases you returned in time.")
+                    Text("Plus \(Money.format(store.totalReturned)) back from purchases you returned in time.")
                         .font(.caption).fontWeight(.medium)
                         .foregroundStyle(AppTheme.teal)
                 }
@@ -228,7 +228,7 @@ struct InsightsView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("\(month.label): ₱\(Int(month.used)) used, ₱\(Int(month.wasted)) wasted")
+                        .accessibilityLabel("\(month.label): \(Money.format(month.used)) used, \(Money.format(month.wasted)) wasted")
                     }
                 }
             } else {
@@ -297,7 +297,7 @@ struct InsightsView: View {
                     .font(.caption).fontWeight(.bold)
                     .foregroundStyle(tint)
                 if let amount = entry.amount {
-                    Text("₱\(Int(amount))")
+                    Text(Money.format(amount))
                         .font(.caption2).foregroundStyle(.secondary)
                 }
             }

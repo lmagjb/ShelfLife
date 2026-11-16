@@ -610,7 +610,7 @@ final class ShelfLifeStore: ObservableObject {
 
     /// Runs "Mark used" / "+3 days" taps from reminders once the item has
     /// loaded. Taps can arrive before sign-in finishes restoring.
-    private func applyNotificationActions() {
+    func applyNotificationActions() {
         for action in ReminderManager.shared.pendingActions {
             guard let item = items.first(where: { $0.id == action.itemID }) else { continue }
             switch action.kind {

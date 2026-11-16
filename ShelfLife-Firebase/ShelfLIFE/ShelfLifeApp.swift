@@ -15,7 +15,19 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     ) -> Bool {
         FirebaseApp.configure()
         UNUserNotificationCenter.current().delegate = self
+        ReminderManager.shared.registerActions()
         return true
+    }
+
+    /// A tap on a reminder's "Mark used" or "+3 days" button. The store
+    /// applies it once the item has loaded.
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                didReceive response: UNNotificationResponse,
+                                withCompletionHandler completionHandler: @escaping () -> Void) {
+        ReminderManager.shared.handle(actionIdentifier: response.actionIdentifier,
+                                      userInfo: response.notification.request.content.userInfo)
+        NotificationCenter.default.post(name: .reminderActionReceived, object: nil)
+        completionHandler()
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter,
@@ -40,6 +52,10 @@ struct ShelfLifeApp: App {
                 .environmentObject(auth)
         }
     }
+}
+
+extension Notification.Name {
+    static let reminderActionReceived = Notification.Name("reminderActionReceived")
 }
 
 // MARK: - Decides which screen to show
@@ -82,6 +98,10 @@ struct RootView: View {
             } else {
                 store.disconnect()
             }
+        }
+        // A reminder button tapped while the app was already running.
+        .onReceive(NotificationCenter.default.publisher(for: .reminderActionReceived)) { _ in
+            store.applyNotificationActions()
         }
         .onAppear {
             // Catches a session restored from a previous launch.

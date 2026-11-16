@@ -140,7 +140,7 @@ struct AddEditItemView: View {
 
                     GlassSection("Price (optional)") {
                         HStack(spacing: 8) {
-                            Text("₱")
+                            Text(Money.symbol)
                                 .font(.subheadline).fontWeight(.semibold)
                                 .foregroundStyle(.secondary)
                             TextField("0", text: $amountText)

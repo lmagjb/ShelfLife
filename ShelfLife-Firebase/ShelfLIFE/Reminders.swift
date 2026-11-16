@@ -23,6 +23,14 @@ enum ReminderSettings {
     }
 }
 
+// MARK: - Notification buttons
+/// A button tapped on a reminder, waiting for the item to load.
+struct NotificationAction {
+    enum Kind { case markUsed, extend3 }
+    let itemID: String
+    let kind: Kind
+}
+
 // MARK: - Reminder manager
 /// Schedules real iPhone notifications before items expire.
 /// These are local notifications: the phone fires them itself at the set
@@ -34,7 +42,44 @@ final class ReminderManager {
     /// iOS keeps at most 64 pending notifications per app.
     private let maxPending = 60
 
+    /// Reminder button taps that the store hasn't applied yet.
+    var pendingActions: [NotificationAction] = []
+
+    static let foodCategory = "FOOD_DEADLINE"
+    static let markUsedAction = "MARK_USED"
+    static let extendAction = "EXTEND_3"
+
     private init() {}
+
+    /// Adds "Mark used" and "+3 days" buttons to food reminders.
+    /// Both open the app, so the change is saved while it's running.
+    func registerActions() {
+        let markUsed = UNNotificationAction(identifier: Self.markUsedAction,
+                                            title: "Mark used", options: [.foreground])
+        let extend = UNNotificationAction(identifier: Self.extendAction,
+                                          title: "+3 days", options: [.foreground])
+        let food = UNNotificationCategory(identifier: Self.foodCategory,
+                                          actions: [markUsed, extend],
+                                          intentIdentifiers: [], options: [])
+        center.setNotificationCategories([food])
+    }
+
+    /// Called by the app delegate when a reminder button is tapped.
+    func handle(actionIdentifier: String, userInfo: [AnyHashable: Any]) {
+        guard let itemID = userInfo["itemID"] as? String else { return }
+        switch actionIdentifier {
+        case Self.markUsedAction: pendingActions.append(NotificationAction(itemID: itemID, kind: .markUsed))
+        case Self.extendAction:   pendingActions.append(NotificationAction(itemID: itemID, kind: .extend3))
+        default: break
+        }
+    }
+
+    /// The app icon badge: items due today or overdue.
+    func updateBadge(_ count: Int) {
+        center.setBadgeCount(count) { error in
+            if let error { print("Could not set badge:", error.localizedDescription) }
+        }
+    }
 
     /// Shows the iOS "Allow notifications?" prompt the first time.
     func requestPermission() {
@@ -54,6 +99,8 @@ final class ReminderManager {
 
     func removeAll() {
         center.removeAllPendingNotificationRequests()
+        pendingActions = []
+        updateBadge(0)
     }
 
     /// Clears every pending reminder and builds a fresh set from `items`.
@@ -61,6 +108,7 @@ final class ReminderManager {
     /// extending, deleting and undoing all stay in sync on their own.
     func reschedule(for items: [PantryItem]) {
         center.removeAllPendingNotificationRequests()
+        updateBadge(items.filter { $0.activeDaysLeft <= 0 }.count)
         guard ReminderSettings.enabled else { return }
 
         var planned: [(date: Date, request: UNNotificationRequest)] = []
@@ -77,7 +125,19 @@ final class ReminderManager {
 
         // Keep the soonest ones if there are more than iOS allows.
         for reminder in planned.sorted(by: { $0.date < $1.date }).prefix(maxPending) {
-            center.add(reminder.request) { error in
+            // When it fires, the badge counts everything due by that day.
+            let content = (reminder.request.content.mutableCopy() as? UNMutableNotificationContent)
+                ?? UNMutableNotificationContent()
+            let fireDay = Calendar.current.startOfDay(for: reminder.date)
+            let dueBy = items.filter { item in
+                let deadline = item.isUnderWarrantyOnly ? (item.warrantyDate ?? item.expiryDate) : item.expiryDate
+                return Calendar.current.startOfDay(for: deadline) <= fireDay
+            }.count
+            content.badge = NSNumber(value: max(dueBy, 1))
+            let request = UNNotificationRequest(identifier: reminder.request.identifier,
+                                                content: content,
+                                                trigger: reminder.request.trigger)
+            center.add(request) { error in
                 if let error { print("Could not schedule reminder:", error.localizedDescription) }
             }
         }
@@ -95,6 +155,10 @@ final class ReminderManager {
         content.title = "\(item.emoji) \(item.name)"
         content.body = message(for: item, daysAhead: daysAhead, isWarranty: isWarranty)
         content.sound = .default
+        content.userInfo = ["itemID": item.id]
+        if item.type == .food {
+            content.categoryIdentifier = Self.foodCategory
+        }
 
         let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: fireAt)
         let trigger = UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)
@@ -132,6 +196,9 @@ final class ReminderManager {
 
         if isWarranty {
             return "Warranty ends \(when). File any repair claim before then."
+        }
+        if item.isReturning {
+            return "Drop it off \(when). The return window closes then."
         }
         if item.type == .purchase {
             return "Return window closes \(when). Start the return if you're not keeping it."

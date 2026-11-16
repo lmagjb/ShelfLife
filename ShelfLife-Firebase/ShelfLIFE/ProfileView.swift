@@ -22,7 +22,7 @@ struct ProfileView: View {
                 HStack(spacing: 10) {
                     statBox("\(store.items.count)", "Tracked", tint: AppTheme.teal)
                     statBox("\(store.pantryItems.count)", "In pantry", tint: AppTheme.sage)
-                    statBox("₱\(Int(store.totalAtRisk))", "At risk", tint: AppTheme.warning)
+                    statBox(Money.format(store.totalAtRisk), "At risk", tint: AppTheme.warning)
                 }
 
                 GlassSection("Account") {

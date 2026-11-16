@@ -35,7 +35,7 @@ struct SettingsView: View {
 
                     GlassSection("About") {
                         GlassRow(icon: "pesosign", tint: AppTheme.sage,
-                                 title: "Currency", value: "PHP (₱)", showsChevron: false)
+                                 title: "Currency", value: "\(Money.code) (\(Money.symbol))", showsChevron: false)
                         GlassDivider()
                         GlassRow(icon: "info.circle.fill", tint: .secondary,
                                  title: "Version", value: appVersion, showsChevron: false)
