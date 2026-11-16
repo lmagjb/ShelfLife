@@ -257,13 +257,9 @@ struct SettingsView: View {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
     }
 
-    private var displayName: String {
-        String(auth.email.split(separator: "@").first ?? "Account")
-    }
+    private var displayName: String { auth.displayName }
 
-    private var initials: String {
-        String((auth.email.split(separator: "@").first ?? "").prefix(2)).uppercased()
-    }
+    private var initials: String { auth.initials }
 }
 
 // MARK: - Export helpers

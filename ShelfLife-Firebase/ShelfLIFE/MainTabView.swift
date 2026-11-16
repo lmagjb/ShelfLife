@@ -54,6 +54,25 @@ struct MainTabView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
+        // Save and delete failures, so they don't go unnoticed.
+        .overlay(alignment: .top) {
+            if let message = store.errorMessage {
+                ErrorBanner(message: message) {
+                    store.errorMessage = nil
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 4)
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: store.errorMessage)
+        .task(id: store.errorMessage) {
+            guard let shown = store.errorMessage else { return }
+            try? await Task.sleep(nanoseconds: 6_000_000_000)
+            await MainActor.run {
+                if store.errorMessage == shown { store.errorMessage = nil }
+            }
+        }
         .animation(.spring(response: 0.4, dampingFraction: 0.85),
                    value: store.recentlyDeleted.map(\.id))
         // Hides the bar 4 seconds after the latest delete. A new delete
@@ -153,5 +172,34 @@ struct MainTabView: View {
         .accessibilityLabel("Scan item")
         .frame(width: 66)
         .offset(y: -14)
+    }
+}
+
+// MARK: - Error banner
+
+struct ErrorBanner: View {
+    let message: String
+    var onClose: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(AppTheme.danger)
+                .accessibilityHidden(true)
+            Text(message)
+                .font(.subheadline)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 4)
+            Button(action: onClose) {
+                Image(systemName: "xmark")
+                    .font(.caption).fontWeight(.bold)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Dismiss")
+        }
+        .padding(14)
+        .glass(cornerRadius: 18, tint: AppTheme.danger, tintOpacity: 0.12,
+               shadowRadius: 12, shadowOpacity: 0.12)
     }
 }
