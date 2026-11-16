@@ -1,6 +1,7 @@
 import SwiftUI
 import Combine
 import FirebaseAuth
+import FirebaseCore
 
 // MARK: - Auth
 /// Handles signing up, signing in, and signing out.
@@ -19,6 +20,12 @@ final class AuthService: ObservableObject {
     private var listener: AuthStateDidChangeListenerHandle?
 
     init() {
+        // Normally AppDelegate has already done this. Xcode previews skip
+        // the app delegate, so configure here too or the preview crashes.
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
+        }
+
         // Firebase reports every sign-in change, including at launch when
         // it restores the previous session. That is what keeps the user
         // signed in between runs without any extra code.
@@ -38,6 +45,24 @@ final class AuthService: ObservableObject {
     var email: String { user?.email ?? "" }
 
     var isSignedIn: Bool { user != nil }
+
+    /// The name set in Profile → Edit name, or the part of the email
+    /// before the @.
+    var displayName: String {
+        if let name = user?.displayName, !name.trimmingCharacters(in: .whitespaces).isEmpty {
+            return name
+        }
+        return String(email.split(separator: "@").first ?? "Account")
+    }
+
+    /// Up to two letters for the avatar: "Juan Cruz" → "JC", "juan" → "JU".
+    var initials: String {
+        let words = displayName.split(separator: " ")
+        if words.count >= 2 {
+            return words.prefix(2).compactMap { $0.first }.map(String.init).joined().uppercased()
+        }
+        return String(displayName.prefix(2)).uppercased()
+    }
 
     // MARK: Actions
 
@@ -79,6 +104,65 @@ final class AuthService: ObservableObject {
             self?.errorMessage = error == nil
                 ? "Check your email for a reset link."
                 : "Could not send the reset email."
+        }
+    }
+
+    // MARK: Profile
+
+    /// Saves a display name on the Firebase account. `completion` gets an
+    /// error message, or nil when it worked.
+    func updateDisplayName(_ name: String, completion: @escaping (String?) -> Void) {
+        guard let user else { return }
+        let change = user.createProfileChangeRequest()
+        change.displayName = name.trimmingCharacters(in: .whitespaces)
+        change.commitChanges { [weak self] error in
+            if let error {
+                completion(Self.readable(error))
+                return
+            }
+            // Same User object with a new name, so tell the screens.
+            self?.objectWillChange.send()
+            self?.user = Auth.auth().currentUser
+            completion(nil)
+        }
+    }
+
+    /// Deletes the account for good. Firebase only allows it right after
+    /// signing in, so the password is checked again first. Then
+    /// `deleteData` removes the items and history, and finally the login
+    /// itself is deleted, which signs the user out.
+    func deleteAccount(password: String,
+                       deleteData: @escaping (String, @escaping (Error?) -> Void) -> Void,
+                       completion: @escaping (String?) -> Void) {
+        guard let user, let email = user.email else {
+            completion("No account is signed in.")
+            return
+        }
+        isWorking = true
+        let credential = EmailAuthProvider.credential(withEmail: email, password: password)
+
+        user.reauthenticate(with: credential) { [weak self] _, error in
+            if let error {
+                self?.isWorking = false
+                completion(Self.readable(error))
+                return
+            }
+            deleteData(user.uid) { error in
+                if let error {
+                    self?.isWorking = false
+                    completion("Couldn't delete your items: \(error.localizedDescription)")
+                    return
+                }
+                user.delete { error in
+                    self?.isWorking = false
+                    if let error {
+                        completion(Self.readable(error))
+                        return
+                    }
+                    UserDefaults.standard.removeObject(forKey: "seeded-\(user.uid)")
+                    completion(nil)
+                }
+            }
         }
     }
 

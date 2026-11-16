@@ -22,6 +22,7 @@ struct ItemDetailView: View {
     @State private var isShowingEdit = false
     @State private var isShowingDeleteConfirm = false
     @State private var isShowingExtend = false
+    @State private var isShowingUseSome = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -80,6 +81,13 @@ struct ItemDetailView: View {
         } message: {
             Text("This removes it from ShelfLife on all your devices.")
         }
+        .confirmationDialog("You have \(item.count) left",
+                            isPresented: $isShowingUseSome,
+                            titleVisibility: .visible) {
+            Button("Used 1") { store.useOne(item) }
+            Button("Used all \(item.count)") { isShowingMarkUsed = true }
+            Button("Cancel", role: .cancel) { }
+        }
         .confirmationDialog("Extend the expiry date",
                             isPresented: $isShowingExtend,
                             titleVisibility: .visible) {
@@ -102,6 +110,10 @@ struct ItemDetailView: View {
             return left == 0 ? "Warranty ends today" : "Under warranty · \(left) days left"
         }
         if item.daysLeft < 0 { return "Return window closed" }
+        if item.isReturning {
+            if item.daysLeft == 0 { return "Return started · drop off today" }
+            return "Return started · drop off within \(item.daysLeft) days"
+        }
         if item.daysLeft == 0 { return "Return window closes today" }
         if item.daysLeft == 1 { return "Return window closes tomorrow" }
         return "Return window closes in \(item.daysLeft) days"
@@ -154,9 +166,13 @@ struct ItemDetailView: View {
             detailRow("Purchased", "\(abs(Calendar.current.dateComponents([.day], from: item.purchasedDate, to: Date()).day ?? 0)) days ago")
             GlassDivider()
             detailRow("Source", item.source)
+            if let quantity = item.quantity {
+                GlassDivider()
+                detailRow("Quantity", "\(quantity) left")
+            }
             if let amount = item.amount {
                 GlassDivider()
-                detailRow("Price", "₱\(Int(amount))")
+                detailRow("Price", Money.format(amount))
             }
             if !item.notes.isEmpty {
                 GlassDivider()
@@ -170,7 +186,7 @@ struct ItemDetailView: View {
         VStack(spacing: 0) {
             detailRow("Store", item.source)
             GlassDivider()
-            detailRow("Amount", item.amount.map { "₱\(Int($0))" } ?? "Not set")
+            detailRow("Amount", item.amount.map { Money.format($0) } ?? "Not set")
             GlassDivider()
             detailRow("Purchased", item.purchasedDate.formatted(date: .abbreviated, time: .omitted))
             GlassDivider()
@@ -211,6 +227,11 @@ struct ItemDetailView: View {
             milestoneRow(item.notify ? "Return reminder" : "Return reminder (off)",
                          reminderDate.formatted(date: .long, time: .omitted),
                          done: reminderDate < Date(), isLast: false)
+            if let started = item.returnStartedDate {
+                milestoneRow("Return started",
+                             started.formatted(date: .long, time: .omitted),
+                             done: true, isLast: false)
+            }
             milestoneRow("Return window closes",
                          item.expiryDate.formatted(date: .long, time: .omitted),
                          done: item.daysLeft < 0, isLast: item.warrantyDate == nil)
@@ -317,6 +338,14 @@ struct ItemDetailView: View {
                     // Too late to return it; the only thing left is removing it.
                     Button("Remove from ShelfLife") { isShowingDeleteConfirm = true }
                         .buttonStyle(SecondaryButtonStyle())
+                } else if item.isReturning {
+                    Button("Cancel Return") { store.cancelReturn(item) }
+                        .buttonStyle(SecondaryButtonStyle())
+                    Button("Mark Returned") {
+                        store.completeReturn(item)
+                        dismiss()
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
                 } else {
                     Button("Keep It") { dismiss() }
                         .buttonStyle(SecondaryButtonStyle())
@@ -324,8 +353,10 @@ struct ItemDetailView: View {
                         .buttonStyle(PrimaryButtonStyle())
                 }
             } else {
-                Button("Mark Used") { isShowingMarkUsed = true }
-                    .buttonStyle(SecondaryButtonStyle())
+                Button("Mark Used") {
+                    if item.count > 1 { isShowingUseSome = true } else { isShowingMarkUsed = true }
+                }
+                .buttonStyle(SecondaryButtonStyle())
                 Button("Extend") { isShowingExtend = true }
                     .buttonStyle(PrimaryButtonStyle())
             }

@@ -35,7 +35,7 @@ struct SettingsView: View {
 
                     GlassSection("About") {
                         GlassRow(icon: "pesosign", tint: AppTheme.sage,
-                                 title: "Currency", value: "PHP (₱)", showsChevron: false)
+                                 title: "Currency", value: "\(Money.code) (\(Money.symbol))", showsChevron: false)
                         GlassDivider()
                         GlassRow(icon: "info.circle.fill", tint: .secondary,
                                  title: "Version", value: appVersion, showsChevron: false)
@@ -257,13 +257,9 @@ struct SettingsView: View {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
     }
 
-    private var displayName: String {
-        String(auth.email.split(separator: "@").first ?? "Account")
-    }
+    private var displayName: String { auth.displayName }
 
-    private var initials: String {
-        String((auth.email.split(separator: "@").first ?? "").prefix(2)).uppercased()
-    }
+    private var initials: String { auth.initials }
 }
 
 // MARK: - Export helpers

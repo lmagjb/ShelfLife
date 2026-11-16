@@ -1,6 +1,33 @@
 ShelfLife — new design + Firebase
 =================================
 
+REVIEW FIXES (Nov 2026)
+-----------------------
+Not compiled yet: built on Linux without Xcode. Send the first error
+from Cmd+5 if something breaks.
+
+  * Returns: "Start Return" now keeps the item as "Return in progress"
+    with its drop-off reminder. Tap "Mark Returned" when it's done.
+  * Profile: Edit name, Currency picker, Change password (reset email)
+    and Delete Account (asks for the password, then deletes items,
+    history and the login). Apple requires account deletion.
+  * Starter items: the "already added" flag is saved on the account
+    (users/{userID} -> seeded), so samples don't come back on a new
+    phone or after reinstalling.
+  * Errors: failed saves and deletes show a red banner at the top.
+  * Money: shown in the chosen currency with commas (₱10,489).
+  * Reminders: food reminders have "Mark used" and "+3 days" buttons.
+    The app icon badge counts items due today or overdue.
+  * Quantity: food can have a count (12 eggs). "Mark Used" asks
+    "Used 1" or "Used all".
+  * Default dates follow the category: meat 3 days, produce and bread
+    5, dairy 7, pantry 90, purchases 30.
+  * Receipts with several priced lines show a checklist to add them all.
+  * Recipes: smoothies and pancakes only for fruit and milk items.
+  * Login preview no longer crashes in Xcode's canvas.
+  * New files: README.md, firestore.rules, .gitignore.
+
+
 NEWEST UPDATE (23 Swift files)
 ------------------------------
 New files:

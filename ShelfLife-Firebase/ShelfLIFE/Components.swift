@@ -87,7 +87,7 @@ struct ItemRowView: View {
             ItemAvatar(item: item)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(item.name)
+                Text(item.quantity.map { "\(item.name) ×\($0)" } ?? item.name)
                     .font(.subheadline).fontWeight(.semibold)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
