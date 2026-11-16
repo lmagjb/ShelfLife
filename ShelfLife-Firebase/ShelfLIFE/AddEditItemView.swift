@@ -23,13 +23,17 @@ struct AddEditItemView: View {
     @State private var amountText: String
     @State private var notes: String
     @State private var notifyMe: Bool
+    /// 0 means "not counted".
+    @State private var quantity: Int
+    /// Once the user picks a date, changing category stops replacing it.
+    @State private var datePickedByHand: Bool
 
     init(editing: PantryItem? = nil) {
         self.editing = editing
 
         let type = editing?.type ?? .food
         let category = editing?.category ?? ItemCategory.defaultCategory(for: type)
-        let inAWeek = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
+        let typical = Calendar.current.date(byAdding: .day, value: category.typicalDays, to: Date()) ?? Date()
         let inAYear = Calendar.current.date(byAdding: .year, value: 1, to: Date()) ?? Date()
 
         _itemName          = State(initialValue: editing?.name ?? "")
@@ -37,7 +41,9 @@ struct AddEditItemView: View {
         _selectedCategory  = State(initialValue: category)
         _emoji             = State(initialValue: editing?.emoji ?? category.emoji)
         _emojiPickedByHand = State(initialValue: editing != nil)
-        _expiryDate        = State(initialValue: editing?.expiryDate ?? inAWeek)
+        _expiryDate        = State(initialValue: editing?.expiryDate ?? typical)
+        _datePickedByHand  = State(initialValue: editing != nil)
+        _quantity          = State(initialValue: editing?.quantity ?? 0)
         _hasWarranty       = State(initialValue: editing?.warrantyDate != nil)
         _warrantyDate      = State(initialValue: editing?.warrantyDate ?? inAYear)
         _notes             = State(initialValue: editing?.notes ?? "")
@@ -160,6 +166,7 @@ struct AddEditItemView: View {
                                 let days = quickDates[index].1
                                 Button {
                                     expiryDate = Calendar.current.date(byAdding: .day, value: days, to: Date()) ?? Date()
+                                    datePickedByHand = true
                                 } label: {
                                     FilterChip(title: label,
                                                isSelected: PantryItem.days(until: expiryDate) == days)
@@ -173,13 +180,24 @@ struct AddEditItemView: View {
 
                         VStack(spacing: 0) {
                             DatePicker(selectedType == .food ? "Expiry date" : "Last day to return",
-                                       selection: $expiryDate, displayedComponents: .date)
+                                       selection: expiryBinding, displayedComponents: .date)
                                 .font(.subheadline)
                                 .tint(AppTheme.sage)
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 9)
                         }
                         .glass(cornerRadius: AppTheme.cardRadius)
+                    }
+
+                    if selectedType == .food {
+                        GlassSection("Quantity (optional)") {
+                            Stepper(value: $quantity, in: 0...99) {
+                                Text(quantity == 0 ? "Not counted" : "\(quantity) left")
+                                    .font(.subheadline)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 9)
+                        }
                     }
 
                     if selectedType == .purchase {
@@ -250,8 +268,20 @@ struct AddEditItemView: View {
             }
             .onChange(of: selectedCategory) { _, newCategory in
                 if !emojiPickedByHand { emoji = newCategory.emoji }
+                // Milk keeps about a week, meat about 3 days.
+                if !datePickedByHand {
+                    expiryDate = Calendar.current.date(byAdding: .day, value: newCategory.typicalDays,
+                                                       to: Date()) ?? expiryDate
+                }
             }
         }
+    }
+
+    /// The date picker's binding. Picking a date by hand stops the
+    /// category from changing it.
+    private var expiryBinding: Binding<Date> {
+        Binding(get: { expiryDate },
+                set: { expiryDate = $0; datePickedByHand = true })
     }
 
     private func emojiButton(_ option: String) -> some View {
@@ -300,6 +330,8 @@ struct AddEditItemView: View {
             item.amount = amount
             item.notes = notes
             item.notify = notifyMe
+            item.quantity = (selectedType == .food && quantity > 0) ? quantity : nil
+            if selectedType == .food { item.returnStartedDate = nil }
             store.updateItem(item)
         } else {
             let item = PantryItem(
@@ -313,7 +345,8 @@ struct AddEditItemView: View {
                 notes: notes,
                 amount: amount,
                 warrantyDate: warranty,
-                notify: notifyMe
+                notify: notifyMe,
+                quantity: (selectedType == .food && quantity > 0) ? quantity : nil
             )
             store.addItem(item)
         }

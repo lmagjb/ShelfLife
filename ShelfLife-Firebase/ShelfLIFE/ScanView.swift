@@ -25,6 +25,9 @@ struct ScanView: View {
     @State private var detectedName = ""
     @State private var detectedStore = ""
     @State private var detectedAmount = ""
+    /// Items found on a receipt with several lines, and which are ticked.
+    @State private var receiptLines: [ReceiptReader.Line] = []
+    @State private var selectedLines: Set<UUID> = []
 
     private var cameraAvailable: Bool {
         UIImagePickerController.isSourceTypeAvailable(.camera)
@@ -40,7 +43,10 @@ struct ScanView: View {
                 VStack(spacing: 16) {
                     viewfinder
 
-                    if hasDetected {
+                    if hasDetected && receiptLines.count > 1 {
+                        receiptListCard
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    } else if hasDetected {
                         detectedCard
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                     } else {
@@ -254,6 +260,8 @@ struct ScanView: View {
     /// Finds the product name online, then fills in the form.
     private func lookUp(barcode: String) {
         photo = nil
+        receiptLines = []
+        selectedLines = []
         statusMessage = ""
         isScanning = true
         scanLine = 0
@@ -283,6 +291,88 @@ struct ScanView: View {
     }
 
     // MARK: Result panel
+
+    // MARK: Several items
+
+    /// Shown when a receipt has two or more priced lines.
+    private var receiptListCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Found \(receiptLines.count) items").font(.headline)
+                Text("Untick anything you don't want to track. Each one gets the usual deadline for its category.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
+            VStack(spacing: 0) {
+                ForEach(receiptLines.indices, id: \.self) { index in
+                    if index > 0 { GlassDivider() }
+                    lineRow(receiptLines[index])
+                }
+            }
+            .glass(cornerRadius: 18, shadowRadius: 6, shadowOpacity: 0.06)
+
+            Button("Add \(selectedLines.count) \(selectedLines.count == 1 ? "item" : "items")") {
+                addSelectedLines()
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            .disabled(selectedLines.isEmpty)
+            .opacity(selectedLines.isEmpty ? 0.5 : 1)
+
+            Button("Add just one item instead") {
+                withAnimation { receiptLines = [] }
+            }
+            .font(.subheadline).fontWeight(.semibold)
+            .foregroundStyle(AppTheme.sage)
+            .frame(maxWidth: .infinity)
+        }
+        .glassCard(cornerRadius: 28, padding: 20)
+    }
+
+    private func lineRow(_ line: ReceiptReader.Line) -> some View {
+        let isOn = selectedLines.contains(line.id)
+        return Button {
+            if isOn { selectedLines.remove(line.id) } else { selectedLines.insert(line.id) }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: isOn ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isOn ? AppTheme.sage : Color.secondary)
+                Text(line.category.emoji)
+                Text(line.name)
+                    .font(.subheadline)
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                if let amount = line.amount {
+                    Text(Money.format(amount))
+                        .font(.subheadline).foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 11)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isOn ? .isSelected : [])
+    }
+
+    private func addSelectedLines() {
+        let storeName = detectedStore.trimmingCharacters(in: .whitespaces)
+        for line in receiptLines where selectedLines.contains(line.id) {
+            let type: ItemType = line.category.isFood ? .food : .purchase
+            let expiry = Calendar.current.date(byAdding: .day, value: line.category.typicalDays,
+                                               to: Date()) ?? Date()
+            store.addItem(PantryItem(
+                name: line.name,
+                emoji: line.category.emoji,
+                category: line.category,
+                type: type,
+                source: storeName.isEmpty ? "Scanned" : storeName,
+                purchasedDate: Date(),
+                expiryDate: expiry,
+                amount: line.amount
+            ))
+        }
+        dismiss()
+    }
 
     private var detectedCard: some View {
         VStack(alignment: .leading, spacing: 15) {
@@ -320,7 +410,7 @@ struct ScanView: View {
                 .keyboardType(.decimalPad)
 
             Text(detectedType == .food
-                 ? "Expiry is set to 5 days from today. You can change it after adding."
+                 ? "Expiry is set to \(detectedCategory.typicalDays) days from today, typical for \(detectedCategory.rawValue.lowercased()). You can change it after adding."
                  : "Return window is set to 30 days from today. You can change it after adding.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -380,6 +470,8 @@ struct ScanView: View {
         isScanning = false
 
         if let result {
+            receiptLines = result.lines
+            selectedLines = Set(result.lines.map(\.id))
             detectedName = result.name
             detectedStore = result.store
             detectedAmount = result.amount.map { $0 == $0.rounded() ? String(Int($0)) : String($0) } ?? ""
@@ -395,6 +487,8 @@ struct ScanView: View {
                 ? "No text found. Type the details in below."
                 : (result.name.isEmpty ? "Couldn't find the item name. Type it in below." : "")
         } else {
+            receiptLines = []
+            selectedLines = []
             detectedName = ""
             detectedStore = ""
             detectedAmount = ""
@@ -407,13 +501,15 @@ struct ScanView: View {
     private func reset() {
         withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
             hasDetected = false
+            receiptLines = []
+            selectedLines = []
             photo = nil
             statusMessage = ""
         }
     }
 
     private func addDetectedItem() {
-        let days = detectedType == .purchase ? 30 : 5
+        let days = detectedType == .purchase ? 30 : detectedCategory.typicalDays
         let expiry = Calendar.current.date(byAdding: .day, value: days, to: Date()) ?? Date()
         let amount = Double(detectedAmount.replacingOccurrences(of: ",", with: ""))
         let storeName = detectedStore.trimmingCharacters(in: .whitespaces)

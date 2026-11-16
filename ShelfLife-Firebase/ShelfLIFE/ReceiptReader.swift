@@ -15,6 +15,16 @@ enum ReceiptReader {
         var amount: Double?
         var category: ItemCategory
         var lineCount: Int
+        /// Every line that looks like an item with a price. Two or more
+        /// means the scan screen offers to add them all at once.
+        var lines: [Line] = []
+    }
+
+    struct Line: Identifiable {
+        let id = UUID()
+        var name: String
+        var amount: Double?
+        var category: ItemCategory
     }
 
     /// Runs text recognition off the main thread and calls back on it.
@@ -90,11 +100,20 @@ enum ReceiptReader {
             ?? ""
         let name = tidy(removeMoney(from: itemLine))
 
+        // Every priced line below the store name is a possible item.
+        let itemLines: [Line] = wordy.dropFirst().compactMap { line in
+            guard let price = money(in: line) else { return nil }
+            let lineName = tidy(removeMoney(from: line))
+            guard lineName.count >= 3 else { return nil }
+            return Line(name: lineName, amount: price, category: guessCategory(for: lineName))
+        }
+
         return Result(name: name,
                       store: store,
                       amount: amount,
                       category: guessCategory(for: name.isEmpty ? store : name),
-                      lineCount: cleaned.count)
+                      lineCount: cleaned.count,
+                      lines: itemLines)
     }
 
     /// The amount on the TOTAL line. Receipts often split "TOTAL" and the
