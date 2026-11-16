@@ -1,6 +1,7 @@
 import SwiftUI
 import Combine
 import FirebaseAuth
+import FirebaseCore
 
 // MARK: - Auth
 /// Handles signing up, signing in, and signing out.
@@ -19,6 +20,12 @@ final class AuthService: ObservableObject {
     private var listener: AuthStateDidChangeListenerHandle?
 
     init() {
+        // Normally AppDelegate has already done this. Xcode previews skip
+        // the app delegate, so configure here too or the preview crashes.
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
+        }
+
         // Firebase reports every sign-in change, including at launch when
         // it restores the previous session. That is what keeps the user
         // signed in between runs without any extra code.
